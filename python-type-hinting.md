@@ -130,6 +130,7 @@ cat basic-mypy-usage-example.py
 mypy basic-mypy-usage-example.py
 ```
 
+---
 
 ## 2. Beginner Concepts: The Basics of Annotations
 
@@ -317,6 +318,7 @@ def process_input_310_plus(value: str | int) -> str | int:
 
 **Recommendation:** For Python 3.10+, use the `|` (pipe) operator for `Union` as it's cleaner and more readable.
 
+---
 
 ## 3. Intermediate Concepts: Collections and Custom Types
 
@@ -588,8 +590,10 @@ class Config:
 **Example 17:**
 
 ```python
-from typing import TypedDict, List, Optional
+from typing import TypedDict, List, Optional, NotRequired
 
+# User with email as an optional. But the key should be present. 
+# The email key can have either a string or None.
 class User(TypedDict):
     name: str
     age: int
@@ -597,7 +601,38 @@ class User(TypedDict):
     is_active: bool
     roles: List[str]
 
+# Another User definition.
+# Email key is not required but if key is present then it should be a string or None.
+class User2(TypedDict):
+    name: str
+    age: int
+    email: NotRequired[Optional[str]]
+    is_active: bool
+    roles: List[str]
+
+# Another User definition
+# Email key is not required, but if present, it should be a string.
+class User3(TypedDict):
+    name: str
+    age: int
+    email: NotRequired[str]
+    is_active: bool
+    roles: List[str]
+
 def register_user(user_data: User) -> None:
+    print(f"Registering user: {user_data['name']}")
+    if user_data.get('email'):
+        print(f"Email: {user_data['email']}")
+    print(f"Roles: {', '.join(user_data['roles'])}")
+
+# Revising the Register User function accordingly
+def register_user2(user_data: User2) -> None:
+    print(f"Registering user: {user_data['name']}")
+    if user_data.get('email'):
+        print(f"Email: {user_data['email']}")
+    print(f"Roles: {', '.join(user_data['roles'])}")
+# Revising the Register User function accordingly
+def register_user3(user_data: User3) -> None:
     print(f"Registering user: {user_data['name']}")
     if user_data.get('email'):
         print(f"Email: {user_data['email']}")
@@ -613,15 +648,64 @@ new_user: User = {
 }
 register_user(new_user)
 
-# Valid usage (email is Optional)
+# Valid usage (email is not available hence setting to None)
 another_user: User = {
     "name": "David",
     "age": 40,
+    "email": None,
     "is_active": False,
     "roles": ["admin", "editor"]
 }
 register_user(another_user)
 
+# Valid usage (email if present is a string, if not present then None)
+another_user2_1: User2 = {
+    "name": "David",
+    "age": 40,
+    "is_active": False,
+    "roles": ["admin", "editor"]
+}
+register_user2(another_user2_1)
+
+another_user2_2: User2 = {
+    "name": "David",
+    "age": 40,
+    "email": None,
+    "is_active": False,
+    "roles": ["admin", "editor"]
+}
+register_user2(another_user2_2)
+
+another_user2_3: User2 = {
+    "name": "David",
+    "age": 40,
+    "email": "david@example.com",
+    "is_active": False,
+    "roles": ["admin", "editor"]
+}
+register_user2(another_user2_3)
+
+
+# Valid usage (email if present is a string, but can't be a None)
+another_user3_1: User3 = {
+    "name": "David",
+    "age": 40,
+    "is_active": False,
+    "roles": ["admin", "editor"]
+}
+register_user3(another_user3_1)
+
+another_user3_2: User3 = {
+    "name": "David",
+    "age": 40,
+    "email": "david@example.com",
+    "is_active": False,
+    "roles": ["admin", "editor"]
+}
+register_user3(another_user3_2)
+
+# Run the above code twice with mypy by uncommenting the below line
+#
 # Mypy error: missing required key 'is_active'
 # invalid_user: User = {"name": "Eve", "age": 30}
 # register_user(invalid_user)
@@ -656,9 +740,9 @@ update_user({"email": "grace@example.com", "age": 35})
 
 Generics allow you to write functions or classes that operate on types that are not known until runtime, while still maintaining type safety. `TypeVar` defines a type variable that acts as a placeholder for a specific type.
 
-Python
+**Example 18:**
 
-```
+```python
 from typing import TypeVar, List, Generic
 
 # Define a TypeVar (T is a common convention for generic types)
@@ -712,9 +796,9 @@ print(str_stack.pop()) # Output: apple (mypy knows it's a str)
 
 **Constrained `TypeVar`:** You can constrain a `TypeVar` to a specific set of types.
 
-Python
+**Example 19:**
 
-```
+```python
 from typing import TypeVar, Union
 
 # Can only be str or bytes
@@ -732,10 +816,10 @@ print(concat_items(b"hello", b"world")) # Output: b'helloworld'
 
 Protocols allow you to define a "shape" or "interface" that a class must conform to, regardless of its inheritance hierarchy. This is very powerful for Python's duck-typing philosophy ("If it walks like a duck and quacks like a duck, it's a duck").
 
-Python
+**Example 20:**
 
-```
-from typing import Protocol, runtime_checkable
+```python
+from typing import List, Protocol, runtime_checkable
 
 # Define a protocol for objects that can be drawn
 @runtime_checkable # Allows `isinstance` checks at runtime (optional, but useful)
@@ -777,9 +861,9 @@ print(isinstance(my_text, Drawable))   # Output: False
 
 `NewType` creates distinct types that are _subtypes_ of an existing type. This improves code clarity and helps catch bugs where you might accidentally mix up semantically different values that happen to have the same underlying type (e.g., a User ID and an Order ID, both represented as `int`).
 
-Python
+**Example 21:**
 
-```
+```python
 from typing import NewType
 
 UserId = NewType('UserId', int)
@@ -810,9 +894,9 @@ print(type(user_id_val)) # Output: <class 'int'>
 
 `cast()` is a function from `typing` that tells the type checker to treat an expression as if it has a certain type, even if the static checker might not be able to infer it. It does **nothing at runtime**; it's purely for the type checker.
 
-Python
+**Example 22:**
 
-```
+```python
 from typing import cast, List, Union
 
 def process_data(data: Union[List[int], List[str]]) -> None:
@@ -837,16 +921,34 @@ process_data(["hello", "world"])
 # my_string: str = cast(str, 123) # Mypy won't complain here
 # print(my_string.upper()) # This would cause a runtime error
 ```
-
 Use `cast()` only when you have a good reason to override the type checker's inference, and you are certain about the type at that point in the code.
+
+**all(iterable)**
+
++ Purpose: It takes one argument, an iterable (like a list, tuple, set, string, or generator).
++ Behavior:
+    + It returns True if all elements in the iterable are truthy.
+    + It also returns True if the iterable is empty.
+    + It returns False as soon as it encounters the first falsy element (this is called short-circuiting, meaning it doesn't necessarily check all elements if it finds a falsy one early).
++ "Truthy" and "Falsy" Values in Python:
+    + Falsy values: These are values that Python considers False in a boolean context. They include:
+        + False (the boolean)
+        + None
+        + Numeric zeros (0, 0.0, 0j)
+        + Empty sequences ('', [], ())
+        + Empty mappings ({})
+        + Empty sets (set())
+        + Objects from user-defined classes that have a __bool__() method returning False or a __len__() method returning 0.
+ + Truthy values: All other values are considered truthy.
+
 
 ### `overload` for Multiple Signatures
 
 `@overload` allows you to define multiple distinct type signatures for a single function implementation. This is useful when a function can accept different types of arguments and return different types based on those inputs.
 
-Python
+**Example 23:**
 
-```
+```python
 from typing import overload, Union
 
 # Overload 1: if 'arg' is int, return int
@@ -892,9 +994,9 @@ The `@overload` decorated functions only provide type information; the last fu
 
 `NoReturn` indicates that a function will never return normally (e.g., it always raises an exception or enters an infinite loop).
 
-Python
+**Example 24:**
 
-```
+```python
 from typing import NoReturn
 
 def exit_program(error_code: int) -> NoReturn:
@@ -914,10 +1016,10 @@ def infinite_loop() -> NoReturn:
 
 `Annotated` (Python 3.9+) allows you to attach context-specific metadata to types. This metadata is ignored by `mypy` but can be used by other tools (like FastAPI for validation, or Pydantic).
 
-Python
+**Example 25:**
 
-```
-from typing import Annotated
+```python
+from typing import Annotated, Callable, Dict, Any
 from typing import List, Union # Use built-in generics in 3.9+
 
 # Example for FastAPI (though FastAPI has its own `Depends`, `Query`, etc.)
@@ -957,9 +1059,9 @@ print(get_annotations(process_item))
 
 Introduced in Python 3.8 (positional-only `/`) and available for type hinting from 3.8.
 
-Python
+**Example 26:**
 
-```
+```python
 def create_user(
     name: str,
     age: int, /, # All arguments before / are positional-only
@@ -1012,27 +1114,15 @@ create_user("Bob", 25, email="bob@example.com", is_admin=True)
 
 ## 6. Hands-on Exercises
 
-To make this training truly effective, have your team work through these exercises. Encourage them to run `mypy` after each exercise to see the type checker in action.
-
 **Setup:**
 
 1. Ensure `mypy` is installed (`pip install mypy`).
-2. Have them create a file named `exercises.py`.
-
----
 
 **Exercise 1: Basic Function Type Hinting**
 
 - **Task:** Write a function `greet_user` that takes a `name` (string) and an optional `age` (integer) and prints a greeting. If `age` is provided, include it in the greeting.
 - **Expected `mypy` behavior:** No errors.
 - **Hint:** Use `Optional`.
-
-Python
-
-```
-# exercises.py
-# ... (your solution here) ...
-```
 
 ---
 
@@ -1043,13 +1133,6 @@ Python
     2. Create a function `calculate_total_price` that takes a `list` of `ProductInfo` dictionaries and calculates the total price of all products.
 - **Expected `mypy` behavior:** No errors.
 - **Hint:** Use `TypedDict` for `ProductInfo`.
-
-Python
-
-```
-# exercises.py
-# ... (your solution here) ...
-```
 
 ---
 
@@ -1062,13 +1145,6 @@ Python
 - **Expected `mypy` behavior:** No errors for the `int` and `str` lists.
 - **Hint:** Use `TypeVar` and `List[T]`.
 
-Python
-
-```
-# exercises.py
-# ... (your solution here) ...
-```
-
 ---
 
 **Exercise 4: Protocol (Duck Typing)**
@@ -1080,13 +1156,6 @@ Python
 - **Expected `mypy` behavior:** No errors.
 - **Hint:** Use `@runtime_checkable` (optional but good practice for `isinstance` checks).
 
-Python
-
-```
-# exercises.py
-# ... (your solution here) ...
-```
-
 ---
 
 **Exercise 5: `NewType` and Type Safety**
@@ -1097,13 +1166,5 @@ Python
     3. Attempt to call `send_contact_info` with a raw string for one of the arguments and observe `mypy`'s error.
 - **Expected `mypy` behavior:** An error when passing a raw `str` where `EmailAddress` or `PhoneNumber` is expected.
 
-Python
-
-```
-# exercises.py
-# ... (your solution here) ...
-```
-
 ---
 
-This comprehensive tutorial should equip your team with a solid understanding of Python type hinting, from the fundamental concepts to more advanced patterns, and highlight the importance of using a static type checker like `mypy`.
